@@ -185,12 +185,14 @@ def compute_moseq_df(project_dir, model_name, results_dict=None, *, fps=30, smoo
     moseq_df : pandas.DataFrame
         the dataframe that contains kinematic data for each frame
     """
+    from tqdm import tqdm
 
     if results_dict is None:
         results_dict = load_results(project_dir, model_name)
 
     # load index file
     index_filepath = os.path.join(project_dir, "index.csv")
+    index_data = None
     if os.path.exists(index_filepath):
         index_data = pd.read_csv(index_filepath, index_col=False)
     else:
@@ -207,7 +209,7 @@ def compute_moseq_df(project_dir, model_name, results_dict=None, *, fps=30, smoo
     frame_index = []
     s_group = []
 
-    for k, v in results_dict.items():
+    for k, v in tqdm(results_dict.items()):
         n_frame = v["centroid"].shape[0]
         recording_name.append([str(k)] * n_frame)
         centroid.append(v["centroid"])
@@ -288,8 +290,10 @@ def compute_stats_df(
     project_dir,
     model_name,
     moseq_df,
+    results_dict=None,
+    runlength=False,
     min_frequency=0.005,
-    groupby=["group", "name"],
+    groupby=["name"],
     fps=30,
 ):
     """Summary statistics for syllable frequencies and kinematic values.
@@ -313,10 +317,11 @@ def compute_stats_df(
     # compute runlength encoding for syllables
 
     # load model results
-    results_dict = load_results(project_dir, model_name)
+    if results_dict is None:
+        results_dict = load_results(project_dir, model_name)
     syllables = {k: res["syllable"] for k, res in results_dict.items()}
     # frequencies is array of frequencies for sorted syllables [syll_0, syll_1...]
-    frequencies = get_frequencies(syllables)
+    frequencies = get_frequencies(syllables, runlength=runlength)
     syll_include = np.where(frequencies > min_frequency)[0]
 
     # add group information
@@ -333,11 +338,10 @@ def compute_stats_df(
     # syllable frequencies within one session add up to 1
     frequency_df = []
     for k, v in results_dict.items():
-        syll_freq = get_frequencies(v["syllable"])
+        syll_freq = get_frequencies(v["syllable"], runlength=runlength)
         df = pd.DataFrame(
             {
                 "name": k,
-                "group": index_df[index_df["name"] == k]["group"].values[0],
                 "syllable": np.arange(len(syll_freq)),
                 "frequency": syll_freq,
             }

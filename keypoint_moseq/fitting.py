@@ -234,7 +234,7 @@ def fit_model(
                 },
             )
         else:  # delete model snapshots later than start_iter
-            with h5py.File(checkpoint_path, "a") as f:
+            with h5py.File(checkpoint_path, "a", libver='latest') as f:
                 for k in list(f["model_snapshots"].keys()):
                     if int(k) > start_iter:
                         del f["model_snapshots"][k]
@@ -605,7 +605,7 @@ def update_hypparams(model_dict, **kwargs):
 
 
 def expected_marginal_likelihoods(
-    project_dir=None, model_names=None, checkpoint_paths=None
+    project_dir=None, model_names=None, checkpoint_paths=None, num_recordings=None, seed=0
 ):
     """Calculate the expected marginal likelihood score for each model.
 
@@ -628,6 +628,14 @@ def expected_marginal_likelihoods(
         Paths to the checkpoints to compare. Required if ``model_names`` and
         ``project_dir`` are None.
 
+    num_recordings : int, default=None
+        If provided, randomly subsample this many recordings from each
+        checkpoint before computing likelihoods. Useful for reducing memory
+        usage when there are many recordings. If None, all recordings are used.
+
+    seed : int, default=0
+        Random seed used for subsampling recordings.
+
     Returns
     -------
     scores : numpy array
@@ -645,11 +653,20 @@ def expected_marginal_likelihoods(
             for model_name in model_names
         ]
 
-    xs, params = [], []
+    rng = np.random.default_rng(seed)
+
+    xs, params, masks = [], [], []
     for checkpoint_path in checkpoint_paths:
         model, data, _, _ = load_checkpoint(path=checkpoint_path)
-        xs.append(model["states"]["x"])
+        x = model["states"]["x"]
+        mask = data["mask"]
+        if num_recordings is not None and num_recordings < x.shape[0]:
+            idx = rng.choice(x.shape[0], size=num_recordings, replace=False)
+            x = x[idx]
+            mask = mask[idx]
+        xs.append(x)
         params.append(model["params"])
+        masks.append(mask)
 
     num_models = len(xs)
     mlls = np.zeros((num_models, num_models))
@@ -657,7 +674,7 @@ def expected_marginal_likelihoods(
         for j in range(num_models):
             if i != j:
                 mlls[i, j] = marginal_log_likelihood(
-                    jnp.array(data["mask"]),
+                    jnp.array(masks[j]),
                     jnp.array(xs[j]),
                     jnp.array(params[i]["Ab"]),
                     jnp.array(params[i]["Q"]),

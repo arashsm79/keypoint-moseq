@@ -425,6 +425,7 @@ def plot_duration_distribution(
     ax.set_title("Duration distribution")
     ax.set_yticks([])
     if show_median:
+        print(f"Median duration: {np.median(durations)}")
         ax.axvline(np.median(durations), color="k", linestyle="--")
     return fig, ax
 

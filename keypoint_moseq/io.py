@@ -395,7 +395,7 @@ def setup_project(
             node_names = skeleton.node_names
             edge_names = [[e.source.name, e.destination.name] for e in skeleton.edges]
         else:
-            with h5py.File(sleap_file, "r") as f:
+            with h5py.File(sleap_file, "r", libver='latest') as f:
                 node_names = [n.decode("utf-8") for n in f["node_names"]]
                 edge_names = [
                     [n.decode("utf-8") for n in edge] for edge in f["edge_names"]
@@ -532,7 +532,7 @@ def load_checkpoint(project_dir=None, model_name=None, path=None, iteration=None
     """
     path = _get_path(project_dir, model_name, path, "checkpoint.h5")
 
-    with h5py.File(path, "r") as f:
+    with h5py.File(path, "r", libver='latest') as f:
         saved_iterations = np.sort([int(i) for i in f["model_snapshots"]])
 
     if iteration is None:
@@ -586,11 +586,11 @@ def reindex_syllables_in_checkpoint(
     """
     path = _get_path(project_dir, model_name, path, "checkpoint.h5")
 
-    with h5py.File(path, "r") as f:
+    with h5py.File(path, "r", libver='latest') as f:
         saved_iterations = [int(i) for i in f["model_snapshots"]]
 
     if index is None:
-        with h5py.File(path, "r") as f:
+        with h5py.File(path, "r", libver='latest') as f:
             last_iter = np.max(saved_iterations)
             num_states = f[f"model_snapshots/{last_iter}/params/pi"].shape[0]
             z = f[f"model_snapshots/{last_iter}/states/z"][()]
@@ -1144,7 +1144,7 @@ def _sleap_loader(filepath, name):
         coords = arr[:, :, :, :-1].transpose((1, 0, 2, 3))
         confs = arr[:, :, :, -1].transpose((1, 0, 2))
     else:
-        with h5py.File(filepath, "r") as f:
+        with h5py.File(filepath, "r", libver='latest') as f:
             coords = f["tracks"][()].transpose((0, 3, 2, 1))
             confs = f["point_scores"][()].transpose((0, 2, 1))
             bodyparts = [name.decode("utf-8") for name in f["node_names"]]
@@ -1179,7 +1179,7 @@ def _anipose_loader(filepath, name):
 
 def _sleap_anipose_loader(filepath, name):
     """Load keypoints from sleap-anipose hdf5 files."""
-    with h5py.File(filepath, "r") as f:
+    with h5py.File(filepath, "r", libver='latest') as f:
         coords = f["tracks"][()]
         if "point_scores" in f.keys():
             confs = f["point_scores"][()]
@@ -1239,7 +1239,7 @@ def _nwb_loader(filepath, name):
 
 def _facemap_loader(filepath, name):
     """Load keypoints from facemap h5 files."""
-    with h5py.File(filepath, "r") as h5:
+    with h5py.File(filepath, "r", libver='latest') as h5:
         dset = h5["Facemap"]
         bodyparts = sorted(dset.keys())
         coords, confs = [], []
@@ -1298,7 +1298,7 @@ def save_hdf5(filepath, save_dict, datapath=None, exist_ok=False, overwrite=Fals
         os.path.exists(filepath) and not exist_ok
     ), f"{filepath} already exists. Set exist_ok to True to allow for editing an existing file."
 
-    with h5py.File(filepath, "a") as f:
+    with h5py.File(filepath, "a", libver='latest') as f:
         if datapath is not None:
             _savetree_hdf5(jax.device_get(save_dict), f, datapath, overwrite=overwrite)
         else:
@@ -1324,7 +1324,7 @@ def load_hdf5(filepath, datapath=None):
         Dictionary where the values are pytrees, i.e. recursive collections of
         tuples, lists, dicts, and numpy arrays.
     """
-    with h5py.File(filepath, "r") as f:
+    with h5py.File(filepath, "r", libver='latest') as f:
         if datapath is None:
             return {k: _loadtree_hdf5(f[k]) for k in f}
         else:

@@ -1721,18 +1721,18 @@ def outlier_removal(coordinates, confidences, project_dir, overwrite=False, outl
 
         # Setting confidences to 0 will signal to format_data to interpolate these points 
         # there as well
-        confidences[recording_name] = np.where(outliers["mask"], 0, confidences[recording_name])
-        plot_medoid_distance_outliers(
-            project_dir,
-            recording_name,
-            raw_coords,
-            coordinates[recording_name],
-            outliers["mask"],
-            outliers["thresholds"],
-            bodyparts=bodyparts,
-            overwrite=overwrite,
-            **kwargs
-        )
+        # confidences[recording_name] = np.where(outliers["mask"], 0, confidences[recording_name])
+        # plot_medoid_distance_outliers(
+        #     project_dir,
+        #     recording_name,
+        #     raw_coords,
+        #     coordinates[recording_name],
+        #     outliers["mask"],
+        #     outliers["thresholds"],
+        #     bodyparts=bodyparts,
+        #     overwrite=overwrite,
+        #     **kwargs
+        # )
 
     return coordinates, confidences
 
