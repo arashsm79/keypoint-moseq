@@ -287,6 +287,7 @@ def plot_syllable_frequencies(
     path=None,
     minlength=10,
     min_frequency=0.005,
+    runlength=True,
 ):
     """Plot a histogram showing the frequency of each syllable.
 
@@ -330,7 +331,7 @@ def plot_syllable_frequencies(
         results = load_results(project_dir, model_name, path)
 
     syllables = {k: res["syllable"] for k, res in results.items()}
-    frequencies = get_frequencies(syllables)
+    frequencies = get_frequencies(syllables, runlength=runlength)
     frequencies = frequencies[frequencies > min_frequency]
     xmax = max(minlength, np.max(np.nonzero(frequencies > min_frequency)[0]) + 1)
 
